@@ -1,6 +1,5 @@
 class App
   init: =>
-
     # Sidebar Navigation
     if $('.formbuilder').length > 0
       sidebar = $('#sidebar .primary')
@@ -96,6 +95,14 @@ class App
       if $('#notifySubmission').is(':checked')
         $('.method-notify .checkbox-toggle').addClass 'selected'
         $('.method-notify .checkbox-extra').show()
+
+      if $('#notifySubmitter').is(':checked')
+        $('.method-notify-submitter .checkbox-toggle').addClass 'selected'
+        $('.method-notify-submitter .checkbox-extra').show()
+
+      if $('#customSubject').is(':checked')
+        $('.method-customsubject .checkbox-toggle').addClass 'selected'
+        $('.method-customsubject .checkbox-extra').show()
 
       $('.checkbox-toggle').on 'click', ->
         toggle = $(@).data 'checkbox'

@@ -103,6 +103,14 @@ App = (function() {
         $('.method-notify .checkbox-toggle').addClass('selected');
         $('.method-notify .checkbox-extra').show();
       }
+      if ($('#notifySubmitter').is(':checked')) {
+        $('.method-notify-submitter .checkbox-toggle').addClass('selected');
+        $('.method-notify-submitter .checkbox-extra').show();
+      }
+      if ($('#customSubject').is(':checked')) {
+        $('.method-customsubject .checkbox-toggle').addClass('selected');
+        $('.method-customsubject .checkbox-extra').show();
+      }
       return $('.checkbox-toggle').on('click', function() {
         var toggle;
         toggle = $(this).data('checkbox');

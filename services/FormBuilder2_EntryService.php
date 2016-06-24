@@ -126,7 +126,7 @@ class FormBuilder2_EntryService extends BaseApplicationComponent
           if ($field->required) {
             $text = craft()->request->getPost($field->handle);
             if ($text == '') {
-              $errorMessage[] = $field->name . ' cannot be blank.';
+              $errorMessage[$field->handle] = $field->name . ' cannot be blank.';
             }
           }
         break;
@@ -134,7 +134,7 @@ class FormBuilder2_EntryService extends BaseApplicationComponent
           if ($field->required) {
             $richField = craft()->request->getPost($field->handle);
             if ($richField == '') {
-              $errorMessage[] = $field->name . ' cannot be blank.';
+              $errorMessage[$field->handle] = $field->name . ' cannot be blank.';
             }
           }
         break;
@@ -142,11 +142,11 @@ class FormBuilder2_EntryService extends BaseApplicationComponent
           $number = craft()->request->getPost($field->handle);
           if ($field->required) {
             if (!ctype_digit($number)) {
-              $errorMessage[] = $field->name . ' cannot be blank and needs to contain only numbers.';
+              $errorMessage[$field->handle] = $field->name . ' cannot be blank and needs to contain only numbers.';
             }
           } else {
             if (!ctype_digit($number) && (!empty($number))) {
-              $errorMessage[] = $field->name . ' needs to contain only numbers.';
+              $errorMessage[$field->handle] = $field->name . ' needs to contain only numbers.';
             }
           }
         break;
@@ -154,7 +154,7 @@ class FormBuilder2_EntryService extends BaseApplicationComponent
           $multiselect = craft()->request->getPost($field->handle);
           if ($field->required) {
             if ($multiselect == '') {
-              $errorMessage[] = $field->name . ' please select at least one.';
+              $errorMessage[$field->handle] = $field->name . ' needs at least one item selected.';
             }
           }
         break;
@@ -162,7 +162,7 @@ class FormBuilder2_EntryService extends BaseApplicationComponent
           $radiobuttons = craft()->request->getPost($field->handle);
           if ($field->required) {
             if ($radiobuttons == '') {
-              $errorMessage[] = $field->name . ' please select one.';
+              $errorMessage[$field->handle] = $field->name . ' needs at least one option selected.';
             }
           }
         break;
@@ -170,15 +170,15 @@ class FormBuilder2_EntryService extends BaseApplicationComponent
           $dropdown = craft()->request->getPost($field->handle);
           if ($field->required) {
             if ($dropdown == '') {
-              $errorMessage[] = $field->name . ' please select one.';
+              $errorMessage[$field->handle] = $field->name . ' needs an item selected.';
             }
           }
         break;
         case "Checkboxes":
           $checkbox = craft()->request->getPost($field->handle);
           if ($field->required) {
-            if (count($checkbox) == 1) {
-              $errorMessage[] = $field->name . ' please select at least one.';
+            if ($checkbox == '') {
+              $errorMessage[] = $field->name . ' must be checked.';
             }
           }
         break;
@@ -268,15 +268,53 @@ class FormBuilder2_EntryService extends BaseApplicationComponent
   }
 
   /**
+   * Send Email Notification To Submitter
+   *
+   */
+  public function sendEmailNotificationToSubmitter($form, $message, $html = true, $email = null)
+  { 
+    $errors = false;
+    $attributes = $form->getAttributes();
+    $notificationSettings = $attributes['notificationSettings'];
+    $toEmail = $email;
+
+    $adminEmail = craft()->systemSettings->getSetting('email', 'emailAddress');
+
+    $email = new EmailModel();
+    $emailSettings    = craft()->email->getSettings();
+
+    $email->fromEmail = $adminEmail;
+    $email->replyTo   = $adminEmail;
+    $email->sender    = $adminEmail;
+    $email->fromName  = $notificationSettings['publicFormName'] ? $notificationSettings['publicFormName'] : $form->name;
+    $email->toEmail   = $toEmail;
+    $email->subject   = $notificationSettings['submitterEmailSubject'] ? $notificationSettings['submitterEmailSubject'] : 'Thanks For Submission';
+    $email->body      = $message;
+
+    if (!craft()->email->sendEmail($email)) {
+      $errors = true;
+    }
+
+    return $errors ? false : true;
+  }
+
+  /**
    * Send Email Notification
    *
    */
-  public function sendEmailNotification($form, $postUploads, $message, $html = true, $email = null)
+  public function sendEmailNotification($form, $postUploads, $postData, $customSubject, $message, $html = true, $email = null)
   { 
     $errors = false;
     $attributes = $form->getAttributes();
     $notificationSettings = $attributes['notificationSettings'];
     $toEmails = ArrayHelper::stringToArray($notificationSettings['emailSettings']['notifyEmail']);
+
+    // Process Subject Line
+    if ($customSubject) {
+      $subject = $customSubject;
+    } else {
+      $subject = $notificationSettings['emailSettings']['emailSubject'];
+    }
     
     // If submission has files
     if ($postUploads) {
@@ -295,7 +333,7 @@ class FormBuilder2_EntryService extends BaseApplicationComponent
       $email->sender    = $emailSettings['emailAddress'];
       $email->fromName  = $form->name;
       $email->toEmail   = $toEmail;
-      $email->subject   = $notificationSettings['emailSettings']['emailSubject'];
+      $email->subject   = $subject;
       $email->body      = $message;
 
       // Attach files to email

@@ -257,6 +257,13 @@ class FormBuilder2_EntryController extends BaseController
         if ($notificationSettings['notifySubmission'] == '1') {
           $this->notifyAdminOfSubmission($submissionResponseId, $form);
         }
+
+        // Notify Submitter of Submission
+        if (isset($notificationSettings['notifySubmitter'])) {
+          if ($notificationSettings['notifySubmitter'] == '1') {
+            $this->notifySubmitterOfSubmission($submissionResponseId, $form);
+          }
+        }
         
         // Successful Submission Messages
         if ($ajax) {
@@ -312,6 +319,40 @@ class FormBuilder2_EntryController extends BaseController
    * Notify Admin of Submission
    *
    */
+  protected function notifySubmitterOfSubmission($submissionResponseId, $form)
+  { 
+    $submission       = craft()->formBuilder2_entry->getSubmissionById($submissionResponseId);
+    $files            = [];
+    $postUploads      = $submission->files;
+    $postData         = $submission->submission;
+    $postData         = $this->filterSubmissionKeys($postData);
+
+    $attributes             = $form->getAttributes();
+    $notificationSettings   = $attributes['notificationSettings'];
+    $emailField             = $notificationSettings['submitterEmail'];
+
+    // Template Variables
+    $variables['form']      = $form;
+    $variables['data']      = $postData;
+
+    // Template
+    craft()->path->setTemplatesPath(craft()->path->getPluginsPath());
+    $message  = craft()->templates->render('formbuilder2/templates/email/text-submitter', $variables);
+
+    // Email
+    $toEmail = $postData[$emailField];
+
+    if (craft()->formBuilder2_entry->sendEmailNotificationToSubmitter($form, $message, true, $toEmail)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * Notify Admin of Submission
+   *
+   */
   protected function notifyAdminOfSubmission($submissionResponseId, $form)
   {  
     $submission       = craft()->formBuilder2_entry->getSubmissionById($submissionResponseId);
@@ -358,8 +399,17 @@ class FormBuilder2_EntryController extends BaseController
     if ($notificationSettings['templateSettings']['emailCustomLogo'] != '') {
       $variables['customLogo']          = $customLogo;
     }
+
     if ($notificationSettings['emailSettings']['sendSubmissionData'] == '1') {
       $variables['data']                = $postData;
+    }
+
+    $customSubject = '';
+    if (isset($notificationSettings['customSubject'])) {
+      if ($notificationSettings['customSubject'] == '1') {
+        $customSubjectField = $notificationSettings['customSubjectLine'];
+        $customSubject = $postData[$customSubjectField];
+      }
     }
 
     if ($templateSettings['emailTemplateStyle'] == 'html') {
@@ -376,7 +426,7 @@ class FormBuilder2_EntryController extends BaseController
       }
     }
 
-    if (craft()->formBuilder2_entry->sendEmailNotification($form, $postUploads, $message, true, null)) {
+    if (craft()->formBuilder2_entry->sendEmailNotification($form, $postUploads, $postData, $customSubject, $message, true, null)) {
       return true;
     } else {
       return false;

@@ -110,6 +110,10 @@ If you want to have custom markup for your rendered fields follow these steps to
 
 ## Changelog
 
+* 6.6.16 - You can now add custom From Name to your notifications (for form submitter)
+* 3.25.16 - Added ability to get custom subject line from form submission
+* 2.26.16 - Added option to notify submitter
+* 2.5.16 - Merged pull request, fixed required checkox not passing if only one checkbox [#30](https://github.com/roundhouse/FormBuilder-2-Craft-CMS/pull/30)
 * 1.21.16 - If you have files and email notifications turned on, you will now get file attachments to your email.
 * 1.14.16 - Fixed Dropdown FieldType from not submitting data. Fixed undefined error when adding Forms field to matrix.
 * 1.13.16 - added getFormById($id) functionality, if you need to render form on frontend based on form id use getFormHtmlById($id) instead
